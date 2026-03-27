@@ -63,18 +63,50 @@ int main( int argc, char **argv )
     // Transpose the matrix on the GPU.
     //
 
+    // Allocate Memory
 
-    cl_mem device_a = clCreateBuffer(
+    cl_mem device_in = clCreateBuffer(
         context,
         CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
         nRows*nCols*sizeof(float),
         hostMatrix,
         &status
-    )
+    );
+
+    cl_mem device_out = clCreateBuffer(
+        context,
+        CL_MEM_WRITE_ONLY,
+        nRows*nCols*sizeof(float),
+        NULL,
+        &status
+    );
+
+    // Compile Kernel
+
+    cl_kernel kernel = compileKernelFromFile( "cwk3.cl", "transpose", context, device );
+
+    // Set kernel args
+
+    status = clSetKernelArg( kernel, 0, sizeof(cl_mem), &device_in );
+    status = clSetKernelArg( kernel, 1, sizeof(cl_mem), &device_out );
+    status = clSetKernelArg( kernel, 2, sizeof(int), &nRows );
+    status = clSetKernelArg( kernel, 3, sizeof(int), &nCols );
+
+    // Set Work Size
     
+    size_t globalWorkSize[2] = { nRows, nCols };
 
+    // Queue kernel
+    // NULL local work size for auto-selection.
 
+    status = clEnqueueNDRangeKernel( queue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, NULL );
 
+    // Read back the result.
+
+    status = clEnqueueReadBuffer( queue, device_out, CL_TRUE, 0, nRows*nCols*sizeof(float), hostMatrix, 0, NULL, NULL );
+
+    // release kernel
+    clReleaseKernel( kernel );
     //
     // Display the final result. This assumes that the transposed matrix was copied back to the hostMatrix array
     // (note the arrays are the same total size before and after transposing - nRows * nCols - so there is no risk
