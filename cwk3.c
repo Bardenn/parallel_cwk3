@@ -64,7 +64,15 @@ int main( int argc, char **argv )
     //
 
 
-    // ...
+    cl_mem device_a = clCreateBuffer(
+        context,
+        CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+        nRows*nCols*sizeof(float),
+        hostMatrix,
+        &status
+    )
+    
+
 
 
     //
